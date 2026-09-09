@@ -42,12 +42,13 @@ export default function ComposeModal({
 
     setSubmitting(true);
     try {
+      const startTimeISO = new Date(startTime).toISOString();
       await scheduleEmails({
         sender,
         subject,
         body,
         recipients,
-        startTime,
+        startTime: startTimeISO,
         delayMs,
         hourlyLimit,
       });
