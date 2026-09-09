@@ -3,6 +3,15 @@ import IORedis from "ioredis";
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const useTLS = REDIS_URL.startsWith("rediss://");
 
+// log (masked) connection target so you can verify the deployed config on Render
+try {
+  const u = new URL(REDIS_URL);
+  const masked = `${u.protocol}//${u.username ? "default" : ""}:${u.password ? "***" : ""}@${u.host}${u.pathname}`;
+  console.log(`redis config: ${masked}, TLS=${useTLS}`);
+} catch {
+  console.log(`redis config: (could not parse REDIS_URL), TLS=${useTLS}`);
+}
+
 function makeConnection(name: string, opts: { maxRetriesPerRequest: number | null }) {
   const conn = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: opts.maxRetriesPerRequest,
