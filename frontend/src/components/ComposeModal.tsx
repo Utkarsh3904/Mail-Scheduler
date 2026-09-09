@@ -33,33 +33,34 @@ export default function ComposeModal({
   }
 
   async function handleSubmit() {
-    setError("");
+  setError("");
 
-    if (!sender || !subject || !body || recipients.length === 0 || !startTime) {
-      setError("please fill everything and upload a lead list");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const startTimeISO = new Date(startTime).toISOString();
-      await scheduleEmails({
-        sender,
-        subject,
-        body,
-        recipients,
-        startTime: startTimeISO,
-        delayMs,
-        hourlyLimit,
-      });
-      onScheduled();
-      onClose();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+  if (!sender || !subject || !body || recipients.length === 0 || !startTime) {
+    setError("please fill everything and upload a lead list");
+    return;
   }
+
+  setSubmitting(true);
+  try {
+    const startTimeISO = new Date(startTime).toISOString();
+    await scheduleEmails({
+      sender,
+      subject,
+      body,
+      recipients,
+      startTime: startTimeISO,
+      delayMs,
+      hourlyLimit,
+    });
+    onScheduled();
+    onClose();
+  } catch (err: any) {
+    console.error("schedule failed:", err); // <-- add this line
+    setError(err.message || "something went wrong, check console");
+  } finally {
+    setSubmitting(false);
+  }
+}
 
   return (
     <Modal title="Compose New Email" onClose={onClose}>
@@ -80,7 +81,7 @@ export default function ComposeModal({
         <div className="flex flex-col gap-1">
           <label className="text-sm text-gray-600">Body</label>
           <textarea
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm h-28"
+            className="px-3 py-2 text-sm border border-gray-300 rounded-md h-28"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />

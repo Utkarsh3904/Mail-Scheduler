@@ -40,10 +40,16 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => {
-    loadUser();
+useEffect(() => {
+  loadUser();
+  loadEmails();
+
+  const interval = setInterval(() => {
     loadEmails();
-  }, []);
+  }, 8000); // har 8 second me table refresh
+
+  return () => clearInterval(interval);
+}, []);
 
   async function handleLogout() {
     await logout();
@@ -56,8 +62,8 @@ export default function Dashboard() {
     <div>
       <Header user={user} onLogout={handleLogout} onSlackChange={loadUser} />
 
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="max-w-5xl p-6 mx-auto">
+        <div className="flex items-center justify-between mb-4">
           <Tabs
             tabs={["Scheduled Emails", "Sent Emails"]}
             active={tab}
@@ -66,7 +72,7 @@ export default function Dashboard() {
           <Button onClick={() => setShowCompose(true)}>+ Compose New Email</Button>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-white border border-gray-200 rounded-lg">
           {tab === "Scheduled Emails" ? (
             <EmailTable
               loading={loading}
