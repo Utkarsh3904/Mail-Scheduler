@@ -4,8 +4,9 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
 // queueRedis: used by the Queue (emailQueue.add) — non-blocking writes only
 export const queueRedis = new IORedis(REDIS_URL, {
-  maxRetriesPerRequest: null,
+  maxRetriesPerRequest: 3,
   connectTimeout: 5000,
+  commandTimeout: 5000,
 });
 
 // workerRedis: used by the Worker — needs its own connection for blocking

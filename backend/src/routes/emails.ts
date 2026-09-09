@@ -6,6 +6,15 @@ import { searchEmails } from "../search";
 
 const router = Router();
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 router.use(requireLogin);
 
 // schedule one or more emails (one recipient per row from the uploaded list)
@@ -53,22 +62,26 @@ router.post("/schedule", async (req: AuthedRequest, res) => {
       const delayFromNow = Math.max(scheduledTime.getTime() - Date.now(), 0);
 
       try {
-        await emailQueue.add(
-          "send-email",
-          {
-            emailId,
-            sender,
-            recipient,
-            subject,
-            body,
-            hourlyLimit: limit,
-          },
-          {
-            delay: delayFromNow,
-            jobId: `email-${emailId}`,
-            attempts: 3,
-            backoff: { type: "exponential", delay: 5000 },
-          }
+        await withTimeout(
+          emailQueue.add(
+            "send-email",
+            {
+              emailId,
+              sender,
+              recipient,
+              subject,
+              body,
+              hourlyLimit: limit,
+            },
+            {
+              delay: delayFromNow,
+              jobId: `email-${emailId}`,
+              attempts: 3,
+              backoff: { type: "exponential", delay: 5000 },
+            }
+          ),
+          6000,
+          "emailQueue.add"
         );
       } catch (queueErr: any) {
         // queue failure (e.g. Redis unreachable) shouldn't leave the request hanging
