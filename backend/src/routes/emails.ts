@@ -80,7 +80,7 @@ router.post("/schedule", async (req: AuthedRequest, res) => {
               backoff: { type: "exponential", delay: 5000 },
             }
           ),
-          6000,
+          10000,
           "emailQueue.add"
         );
       } catch (queueErr: any) {

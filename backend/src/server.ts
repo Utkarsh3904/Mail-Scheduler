@@ -1,5 +1,15 @@
 import "dotenv/config";
 import express from "express";
+
+// global error handlers - log and keep the process alive instead of crashing
+// on a failed redis/db/queue promise or unhandled exception
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { createBullBoard } from "@bull-board/api";
