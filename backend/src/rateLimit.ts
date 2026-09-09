@@ -1,4 +1,4 @@
-import { redis } from "./redis";
+import { utilityRedis } from "./redis";
 
 // key looks like: rate:sender@example.com:2026-09-08T14
 function hourKey(sender: string) {
@@ -10,14 +10,14 @@ function hourKey(sender: string) {
 // returns true if allowed, false if the sender is already at the limit.
 export async function canSendNow(sender: string, hourlyLimit: number) {
   const key = hourKey(sender);
-  const count = await redis.incr(key);
+  const count = await utilityRedis.incr(key);
 
   if (count === 1) {
-    await redis.expire(key, 3600);
+    await utilityRedis.expire(key, 3600);
   }
 
   if (count > hourlyLimit) {
-    await redis.decr(key);
+    await utilityRedis.decr(key);
     return false;
   }
 

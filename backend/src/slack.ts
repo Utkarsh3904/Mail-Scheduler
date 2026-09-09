@@ -1,6 +1,6 @@
 import axios from "axios";
 import { pool } from "./db";
-import { redis } from "./redis";
+import { utilityRedis } from "./redis";
 
 export async function exchangeSlackCode(code: string) {
   const res = await axios.post(
@@ -42,6 +42,6 @@ export async function sendSlackMessage(userId: number, text: string) {
 export async function shouldNotify(sender: string) {
   const hour = new Date().toISOString().slice(0, 13);
   const key = `slack-notified:${sender}:${hour}`;
-  const wasSet = await redis.set(key, "1", "EX", 3700, "NX");
+  const wasSet = await utilityRedis.set(key, "1", "EX", 3700, "NX");
   return wasSet === "OK";
 }
