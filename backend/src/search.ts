@@ -1,5 +1,13 @@
 import axios from "axios";
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] unhandled promise rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[FATAL] uncaught exception:", err);
+});
+
 const ES_URL = process.env.ELASTIC_NODE || "http://localhost:9200";
 const ES_API_KEY = process.env.ELASTIC_API_KEY;
 
