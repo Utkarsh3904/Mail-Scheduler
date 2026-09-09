@@ -16,7 +16,14 @@ import emailRoutes from "./routes/emails";
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+const frontendUrl = process.env.FRONTEND_URL;
+if (!frontendUrl) {
+  console.warn("WARNING: FRONTEND_URL is not set - CORS origin is undefined, cross-origin requests may fail silently");
+}
+if (frontendUrl) {
+  console.log(`CORS origin: ${frontendUrl}`);
+}
+app.use(cors({ origin: frontendUrl, credentials: true }));
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 

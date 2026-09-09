@@ -9,4 +9,5 @@ export const pool = new Pool({
   ssl: process.env.PGHOST?.includes("neon.tech")
     ? { rejectUnauthorized: false }
     : false,
+  connectionTimeoutMillis: 5000,
 });
