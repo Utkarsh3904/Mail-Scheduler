@@ -6,4 +6,7 @@ export const pool = new Pool({
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
+  ssl: process.env.PGHOST?.includes("neon.tech")
+    ? { rejectUnauthorized: false }
+    : false,
 });
