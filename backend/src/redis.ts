@@ -9,6 +9,12 @@ function makeConnection(name: string, opts: { maxRetriesPerRequest: number | nul
     connectTimeout: 10000,
     ...(useTLS ? { tls: { rejectUnauthorized: false } } : {}),
     retryStrategy: (times: number) => {
+      // cap retries so we fail fast when the host is unreachable (e.g. Render
+      // cannot reach Upstash) instead of looping forever
+      if (times > 10) {
+        console.error(`redis [${name}] giving up after ${times} retries (host unreachable?)`);
+        return null; // stop retrying
+      }
       const delay = Math.min(times * 200, 3000);
       console.log(`redis [${name}] retry attempt ${times}, waiting ${delay}ms`);
       return delay;
