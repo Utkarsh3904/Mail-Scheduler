@@ -26,30 +26,32 @@ export default function Dashboard() {
     }
   }
 
-  async function loadEmails() {
-    setLoading(true);
+  async function loadEmails(isInitial = false) {
+    if (isInitial) setLoading(true);
     try {
       const [scheduledData, sentData] = await Promise.all([
         getScheduledEmails(),
         getSentEmails(),
       ]);
-      setScheduled(scheduledData);
-      setSent(sentData);
+      setScheduled(scheduledData || []);
+      setSent(sentData || []);
+    } catch (err) {
+      console.error("Failed to fetch emails:", err);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   }
 
-useEffect(() => {
-  loadUser();
-  loadEmails();
+  useEffect(() => {
+    loadUser();
+    loadEmails(true);
 
-  const interval = setInterval(() => {
-    loadEmails();
-  }, 8000); // har 8 second me table refresh
+    const interval = setInterval(() => {
+      loadEmails(false);
+    }, 8000);
 
-  return () => clearInterval(interval);
-}, []);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleLogout() {
     await logout();
@@ -85,7 +87,9 @@ useEffect(() => {
               ]}
               rows={scheduled.map((e) => ({
                 ...e,
-                scheduled_time: new Date(e.scheduled_time).toLocaleString(),
+                scheduled_time: e.scheduled_time
+                  ? new Date(e.scheduled_time).toLocaleString()
+                  : "-",
               }))}
             />
           ) : (
@@ -100,7 +104,12 @@ useEffect(() => {
               ]}
               rows={sent.map((e) => ({
                 ...e,
-                sent_time: e.sent_time ? new Date(e.sent_time).toLocaleString() : "-",
+                sent_time: e.sent_time
+                  ? new Date(e.sent_time).toLocaleString()
+                  : e.status === "failed"
+                  ? "Failed before sending"
+                  : "-",
+                error_message: e.error_message || undefined,
               }))}
             />
           )}

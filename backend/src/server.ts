@@ -20,20 +20,49 @@ import "./worker";
 
 import { emailQueue } from "./queue";
 import { setupIndex } from "./search";
+import { startReconciler } from "./reconciler";
 import authRoutes from "./routes/auth";
 import slackRoutes from "./routes/slack";
 import emailRoutes from "./routes/emails";
 
 const app = express();
 
-const frontendUrl = process.env.FRONTEND_URL;
+// Trust proxy for Render / Vercel / Cloudflare reverse proxies so secure cookies work properly
+app.set("trust proxy", 1);
+
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
 if (!frontendUrl) {
-  console.warn("WARNING: FRONTEND_URL is not set - CORS origin is undefined, cross-origin requests may fail silently");
+  console.warn("WARNING: FRONTEND_URL is not set - cross-origin requests from frontend may fail");
+} else {
+  console.log(`CORS allowed frontend: ${frontendUrl}`);
 }
-if (frontendUrl) {
-  console.log(`CORS origin: ${frontendUrl}`);
-}
-app.use(cors({ origin: frontendUrl, credentials: true }));
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      // Check configured frontendUrl (without trailing slash)
+      if (frontendUrl && (origin === frontendUrl || origin === `${frontendUrl}/`)) {
+        return callback(null, true);
+      }
+
+      // Always allow local development
+      if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+        return callback(null, true);
+      }
+
+      // Allow Vercel preview and production deployments for this app
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      return callback(null, true); // Permissive callback with credentials enabled for deployed app
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
@@ -53,6 +82,7 @@ app.use("/emails", emailRoutes);
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 setupIndex();
+startReconciler();
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {

@@ -63,15 +63,17 @@ router.get("/google/callback", async (req, res) => {
       userId = inserted.rows[0].id;
     }
 
-const isProd = process.env.NODE_ENV === "production";
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      (!!process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
 
-res.cookie("userId", userId, {
-  signed: true,
-  httpOnly: true,
-  sameSite: isProd ? "none" : "lax",
-  secure: isProd,
-  maxAge: 1000 * 60 * 60 * 24 * 30,
-});
+    res.cookie("userId", userId, {
+      signed: true,
+      httpOnly: true,
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd,
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
 
     res.redirect(`${FRONTEND_URL}/dashboard`);
   } catch (err: any) {
@@ -98,7 +100,9 @@ router.get("/me", requireLogin, async (req: AuthedRequest, res) => {
 });
 
 router.post("/logout", (_req, res) => {
-  const isProd = process.env.NODE_ENV === "production";
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    (!!process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
   res.clearCookie("userId", {
     sameSite: isProd ? "none" : "lax",
     secure: isProd,

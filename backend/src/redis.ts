@@ -4,8 +4,10 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const useTLS = REDIS_URL.startsWith("rediss://");
 
 // log (masked) connection target so you can verify the deployed config on Render
+let parsedHostname: string | undefined;
 try {
   const u = new URL(REDIS_URL);
+  parsedHostname = u.hostname;
   const masked = `${u.protocol}//${u.username ? "default" : ""}:${u.password ? "***" : ""}@${u.host}${u.pathname}`;
   console.log(`redis config: ${masked}, TLS=${useTLS}`);
 } catch {
@@ -16,16 +18,23 @@ function makeConnection(name: string, opts: { maxRetriesPerRequest: number | nul
   const conn = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: opts.maxRetriesPerRequest,
     connectTimeout: 10000,
-    ...(useTLS ? { tls: { rejectUnauthorized: false } } : {}),
+    keepAlive: 10000,
+    family: 4,
+    ...(useTLS
+      ? {
+          tls: {
+            rejectUnauthorized: false,
+            ...(parsedHostname ? { servername: parsedHostname } : {}),
+          },
+        }
+      : {}),
     retryStrategy: (times: number) => {
-      // cap retries so we fail fast when the host is unreachable (e.g. Render
-      // cannot reach Upstash) instead of looping forever
-      if (times > 10) {
-        console.error(`redis [${name}] giving up after ${times} retries (host unreachable?)`);
-        return null; // stop retrying
+      // Never give up - keep retrying with exponential backoff capped at 3s
+      // so temporary network blips or serverless idle sleep don't kill the connection permanently
+      const delay = Math.min(times * 250, 3000);
+      if (times <= 5 || times % 10 === 0) {
+        console.log(`redis [${name}] retry attempt ${times}, waiting ${delay}ms`);
       }
-      const delay = Math.min(times * 200, 3000);
-      console.log(`redis [${name}] retry attempt ${times}, waiting ${delay}ms`);
       return delay;
     },
     reconnectOnError: (err: Error) => {
@@ -43,6 +52,6 @@ function makeConnection(name: string, opts: { maxRetriesPerRequest: number | nul
   return conn;
 }
 
-export const queueRedis = makeConnection("queue", { maxRetriesPerRequest: 3 });
+export const queueRedis = makeConnection("queue", { maxRetriesPerRequest: null });
 export const workerRedis = makeConnection("worker", { maxRetriesPerRequest: null });
 export const utilityRedis = makeConnection("utility", { maxRetriesPerRequest: null });

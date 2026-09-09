@@ -1,6 +1,6 @@
 import { ScheduledEmail, SentEmail, User } from "./types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:4000").replace(/\/+$/, "");
 
 async function request(path: string, options: RequestInit = {}) {
   let res: Response;

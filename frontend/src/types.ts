@@ -18,6 +18,8 @@ export interface SentEmail {
   id: number;
   recipient: string;
   subject: string;
-  sent_time: string;
+  sent_time: string | null;
+  scheduled_time?: string;
   status: string;
+  error_message?: string | null;
 }

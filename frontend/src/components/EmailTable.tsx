@@ -4,10 +4,10 @@ interface Column {
 }
 
 interface Row {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined | null;
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, error }: { status: string; error?: string }) {
   const colors: Record<string, string> = {
     sent: "bg-green-100 text-green-700",
     failed: "bg-red-100 text-red-700",
@@ -16,9 +16,19 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-700"}`}>
-      {status}
-    </span>
+    <div className="flex flex-col items-start gap-0.5">
+      <span
+        title={error || undefined}
+        className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-700"}`}
+      >
+        {status}
+      </span>
+      {error && (
+        <span className="text-[11px] text-red-500 max-w-[200px] truncate" title={error}>
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -58,7 +68,10 @@ export default function EmailTable({
             {columns.map((col) => (
               <td key={col.key} className="py-2 px-3">
                 {col.key === "status" ? (
-                  <StatusBadge status={String(row[col.key])} />
+                  <StatusBadge
+                    status={String(row[col.key])}
+                    error={row.error_message ? String(row.error_message) : undefined}
+                  />
                 ) : (
                   String(row[col.key] ?? "")
                 )}

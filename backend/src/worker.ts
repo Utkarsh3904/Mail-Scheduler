@@ -7,6 +7,7 @@ import { sendEmail } from "./mailer";
 import { canSendNow, msUntilNextHour } from "./rateLimit";
 import { sendSlackMessage, shouldNotify } from "./slack";
 import { indexEmail } from "./search";
+import { startReconciler } from "./reconciler";
 
 const concurrency = Number(process.env.WORKER_CONCURRENCY) || 5;
 const minDelayMs = Number(process.env.MIN_DELAY_BETWEEN_EMAILS_MS) || 2000;
@@ -71,7 +72,7 @@ async function handleJob(job: Job<JobData>, token?: string) {
       const sentTime = new Date();
 
       await pool.query(
-        "UPDATE emails SET status = 'sent', sent_time = $1 WHERE id = $2",
+        "UPDATE emails SET status = 'sent', sent_time = $1, error_message = NULL WHERE id = $2",
         [sentTime, emailId]
       );
 
@@ -123,3 +124,7 @@ worker.on("failed", (job, err) => console.log(`job ${job?.id} failed:`, err.mess
 worker.on("error", (err) => console.error("[worker] worker-level connection/processing error:", err?.stack || err));
 
 console.log(`worker started, concurrency=${concurrency}, minDelayMs=${minDelayMs}`);
+
+// Start self-healing reconciler to pick up any scheduled emails missed by Redis
+startReconciler();
+
